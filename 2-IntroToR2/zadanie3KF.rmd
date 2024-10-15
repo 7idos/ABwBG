@@ -1,0 +1,27 @@
+---
+title: "Zadanie3"
+author: "K Fidos"
+date: "2024-10-15"
+output: html_document
+
+# ----------------RAPORT----------------
+
+
+
+**Wprowadzenie:**Raport opisujący działania wykonane w zadaniu 3 zajęć wykonanych w dniu
+15.10.2024 
+
+**Opis środowiska:** Zainstalowane pakiety: ggplot2, plotly,
+abe. ggplot2 -zainstalowany zgodnie z poleceniami poprzedniego zadania
+plotly - zainstalowany, ponieważ został podany w poprzednim badaniu
+abe - zainstalowany wedle polecenia poprzedniego zadania 
+
+**Przykładowy kod:**
+
+```{r}
+print("nie bardzo lubię programowanie :/" )
+```
+
+**Wnioski:** Nauczyłam się, że instalowanie pakietów może nie być
+najbardziej prostolinijne, więc wiele osób się gubi, ale jest dość
+proste - wystarczy czytać.
