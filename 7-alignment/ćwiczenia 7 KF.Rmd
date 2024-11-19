@@ -1,0 +1,67 @@
+#########Ćwiczenia 7##########
+
+Zadanie 1
+# wykorzystywany plik https://www.ncbi.nlm.nih.gov/sra/SRX26758115
+fq1 <- readFastq("C:/Users/USER/Desktop/bioinformatyka/SRR31384611.fastq")
+odczyt <- qa("C:/Users/USER/Desktop/bioinformatyka/SRR31384611.fastq")
+report(odczyt, dest="C:/Users/USER/Desktop/bioinformatyka")
+#jakość odczytu jest dobra
+
+Zadanie 2 & 3
+ref_genome <- readDNAStringSet("C:/Users/USER/Desktop/bioinformatyka/ecoli_genome.fna.gz")
+buildindex(basename = "ecoli_index", reference = "C:/Users/USER/Desktop/bioinformatyka/ecoli_genome.fna.gz")
+
+# zostały utworzone pliki    
+#  ecoli_index.00.b.array
+#  ecoli_index.00.b.tab
+#  ecoli_index.files
+#  ecoli_index.log
+#  ecoli_index.lowinf
+#  ecoli_index.reads
+# w lokalizacji C:\Users\USER\Documents\
+
+Zadanie 4
+align(index = "ecoli_index",
+      readfile1 = "C:/Users/USER/Desktop/bioinformatyka/SRR31384611.fastq",
+      input_format = "FASTQ",
+      output_file = "C:/Users/USER/Desktop/bioinformatyka/aligned_sample.BAM")
+      
+#                            aligned_sample.BAM
+#Total_reads                      1643674
+#Mapped_reads                     1278221
+#Uniquely_mapped_reads            1257418
+#Multi_mapping_reads                20803
+#Unmapped_reads                    365453
+#Indels                              1862
+
+# % zmapowanych
+127822100/1643674
+[1] 77.76609
+# % niezmapowanych
+36545300/1643674
+[1] 22.23391
+
+#Odczyty niezmapowane mogą wynikać z różnic osobniczych lub niekompletnego lub złego jakościowo sekwencjonowania badanej sekwencji
+
+Zadanie 5
+aln <- readGAlignments("C:/Users/USER/Desktop/bioinformatyka/aligned_sample.BAM")
+coverage_data <- coverage(aln)
+cov_df <- as.data.frame(coverage_data[[1]])
+cov_df$position <- as.numeric(rownames(cov_df))
+
+#plik typu pdf był pusty, więc zmieniłam komendę pod plik typu jpg
+jpeg(cov_df, output_file = "C:/Users/USER/Desktop/bioinformatyka/plik.jpeg", width = 8, height = 6)
+
+ggplot(cov_df[1:25000, ], aes(x = position, y = value)) +
+  geom_line(color = "blue") +
+  labs(title = "Pokrycie genomu E. coli",
+       x = "Pozycja w genomie",
+       y = "Liczba zmapowanych odczytów")
+       
+dev.off()
+
+#Wykres pokazuje peak w okolicy pozycji 20000
+
+
+
+
