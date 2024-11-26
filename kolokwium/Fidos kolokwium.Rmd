@@ -1,0 +1,97 @@
+---
+title: "kolokwium"
+output: html_document
+date: "2024-11-26"
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+#Polecenie
+#Zmapuj załączoną sekwencję Escherichia coli do genomu
+referencyjnego, wcześniej dokonując preprocessingu danych sekwencyjnych.
+Proszę o wizualną wersję raportu (w dowolnej formie), wygenerowany plik
+.BAM oraz pełny kod źródłowy wraz z komentarzami.
+
+#Wszystkie dodatkowe pliki związane z pracą zaliczeniową zostały wysłane przez platwormę Github
+
+#Wczytane biblioteki 
+library(ShortRead) 
+library(Biostrings)
+library(Rsubread) 
+library(GenomicAlignments) 
+library(ggplot2)
+
+#Wczytanie pliku bazowego
+plik = readFastq("C:/Users/USER/Desktop/kolokwium/ecoli_raw.fq")
+
+#Pierwotna analiza
+analiza = qa("C:/Users/USER/Desktop/kolokwium/ecoli_raw.fq")
+report(analiza, dest = "C:/Users/USER/Desktop/kolokwium/analiza/")
+# Z powstałego raportu wynika, że sekwencja jest dobrej jakości - brak wartości N, z większąścią odczytów w jakości ok. 36, jednak na wykresie pokazującym jakość odczytu pokazuje się też drugi mniejszy pik przy wartości 33, zostanie to skorygowane w dalszej części obróbki pliku. 
+
+#Obróbka przez przycinanie sekwencji słabej jakości (poniżej 50)
+trim \<- trimTailw(plik, k = 2, a = "B", halfwidth = 1) 
+trim1 \<-trim[width(trim) \>= 50]
+
+#Zapisywanie zmienionego pliku z sekwencją
+writeFastq(trim1, "C:/Users/USER/Desktop/kolokwium/trim1.fq")
+
+#Analiza na podstawie nowego pliku 
+analiza1 = qa("C:/Users/USER/Desktop/kolokwium/trim1.fq")
+report(analiza1, dest = "C:/Users/USER/Desktop/kolokwium/analiza1/")
+#Sekwencja została zmieniona co w raporcie widać przede wszystkim na wykresie ogólnej jakości odczytu - niższy pik został usunięty, a jakość przy uwzględnieniu cykli lepiej pokazuje interasujące nas późniejsze cykle procesu
+
+#Usuwanie sekwencji adapterowych
+adapter \<- DNAString("AGATCGGAAGAGC") 
+trim2 \<- trimLRPatterns(Lpattern = adapter, subject = trim1)
+
+#Zapisywanie pliku z korekcją adapterów
+writeFastq(trim2, "C:/Users/USER/Desktop/kolokwium/trim2.fq")
+
+analiza2 = qa("C:/Users/USER/Desktop/kolokwium/trim2.fq")
+report(analiza2, dest = "C:/Users/USER/Desktop/kolokwium/analiza2/")
+
+#Stworzenie i zapisanie histogramu częstotliwości występowania odczytów w zależności od długości
+jpeg(file = "C:/Users/USER/Desktop/kolokwium/histogram.jpeg", width =800, height = 600)
+hist(width(trim1), breaks = 50, main = "Długość odczytów", xlab = "Długość (bp)")
+dev.off()
+#Z histogramu wynika, że większość odczytów ma długość ok. 150pz
+
+#Stworzenie odnośnika do genomu referencyjnego
+genom_ref = readDNAStringSet("C:/Users/USER/Desktop/bioinformatyka/ecoli_genome.fna.gz")
+buildindex(basename = "indeks", reference ="C:/Users/USER/Desktop/bioinformatyka/ecoli_genome.fna.gz")
+
+#Mapowanie pliku po obróbce na genom refferencyjny
+align(index = "indeks", readfile1 ="C:/Users/USER/Desktop/kolokwium/trim2.fq", input_format = "FASTQ",
+output_file = "C:/Users/USER/Desktop/kolokwium/align.BAM")
+
+                      align.BAM
+Total_reads              223516
+Mapped_reads             223495
+Uniquely_mapped_reads    219036
+Multi_mapping_reads        4459
+Unmapped_reads               21
+Indels                       76
+
+
+#Procent zmapowanych odczytów
+22349500/223516
+#Wynik to 99,99% co jest bardzo dobrym wynikiem
+
+#Tworzenie tabelki do zmapowanej sekwencji
+aln \<- readGAlignments("C:/Users/USER/Desktop/kolokwium/align.BAM")
+pokrycie \<- coverage(aln) 
+pokrycie_df \<- as.data.frame(pokrycie[[1]])
+pokrycie_df\$position \<- as.numeric(rownames(pokrycie_df))
+
+#Stworzenie i zapisanie wykresu pokrycia sekwencji badanej z genomem referencyjnym
+jpeg(file = "C:/Users/USER/Desktop/kolokwium/pokrycie.jpeg", width =
+800, height = 600)
+
+ggplot(pokrycie_df[1:25000, ], aes(x = position, y = value)) +
+geom_line(color = "blue") + labs(title = "Pokrycie genomu E. coli", x =
+"Pozycja w genomie", y = "Liczba zmapowanych odczytów")
+
+dev.off()
+#Wykres wskazuje na to, że sekwencja badana pokrywa się z genomem referencyjnym w wielu miejscach w nierównomierny sposób. Wskazuje to na brak specyficzności sekwenji, który najprowdopodobniej wynika z jej długości w porównaniu do genomu referencyjnego. Możliwe jest też, że części badanej sekwencji wielokrotnie powtarzają się w genomie
