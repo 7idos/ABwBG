@@ -1,0 +1,135 @@
+---
+title: "Zadanie12KF"
+output: html_document
+date: "2025-01-23"
+---
+
+```{r}
+BiocManager::install("VariantAnnotation")
+BiocManager::install("GenomicRanges")
+BiocManager::install("AnnotationHub")
+install.packages("vcfR")
+```
+
+```{r}
+library(VariantAnnotation)
+library(GenomicRanges)
+library(AnnotationHub)
+library(vcfR)
+```
+
+# Wczytanie pliku VCF z pakietu VariantAnnotation
+
+```{r}
+vcf_file <- system.file("extdata", "chr22.vcf.gz", package = "VariantAnnotation")
+vcf_file
+```
+
+## Plik zawiera dane z wariantów genetycznych chromosomu 22
+
+# Wizualizacja pierwotnych danych
+
+```{r}
+vcf_data <- readVcf(vcf_file, genome = "hg19")
+show(vcf_data)
+```
+
+# Odczytywanie podstawowych informacji (nagłówki, metadane)
+
+```{r}
+vcf_header <- header(vcf_data)
+vcf_header
+```
+
+# Sprawdzanie kolumn INFO i FORMAT
+
+```{r}
+info(vcf_data)
+geno(vcf_data)
+```
+
+# Liczenie wariantów
+
+```{r}
+num_variants <- length(rowRanges(vcf_data))
+num_variants
+```
+
+## L. wariantów = 10376
+
+# Filtracja
+
+```{r}
+vcf_file <- read.vcfR("C:/Users/USER/Desktop/bioinformatyka/chr22.vcf.gz")
+str(vcf_file) 
+
+qual_values <- vcf_file@fix[, "QUAL"] 
+head(qual_values) 
+names(vcf_file@fix) 
+summary(qual_values) 
+```
+
+# Odfiltrowywanie wariantów
+
+```{r}
+qual_values_numeric <- as.numeric(qual_values) 
+quality_threshold <- 70 
+filtered_vcf <- vcf_file[qual_values_numeric > quality_threshold, ] 
+head(filtered_vcf) 
+write.vcf(filtered_vcf, file = "filtered_vcf_file.vcf")
+```
+
+# Przekształcanie danych do GRanges
+
+```{r}
+vcf_file <- read.vcfR("filtered_vcf_file.vcf")  
+
+chromosomes <- vcf_file@fix[, "CHROM"]  
+positions <- as.integer(vcf_file@fix[, "POS"]) 
+
+ valid_rows <- !is.na(positions)
+  chromosomes <- chromosomes[valid_rows]
+  positions <- positions[valid_rows]
+
+gr_vcf <- GRanges(seqnames = chromosomes, 
+                  ranges = IRanges(start = positions, end = positions))
+head(gr_vcf)
+```
+
+# Uzupełnienie brakujących metadanych
+
+```{r}
+mcols(gr_vcf) <- data.frame(ID = c("var1", "var2", "var3", "var4", "var5", "var6"))
+gr_vcf
+```
+
+# Anotacja wariantów
+
+```{r}
+gr_vcf <- GRanges(seqnames = chromosomes, ranges = IRanges(start = positions, end = positions))
+write.csv(as.data.frame(annotation_results), "annotated_variants.csv", row.names = FALSE)
+```
+
+# Wybór wariantów
+
+```{r}
+utr5_variants <- locateVariants(query = rowRanges(vcf_data), subject = txdb, region = FiveUTRVariants()) 
+
+utr3_variants <- locateVariants(query = rowRanges(vcf_data), subject = txdb, region = ThreeUTRVariants())
+
+cat("Liczba wariantów w 5'UTR:", num_utr5, "\n")
+cat("Liczba wariantów w 3'UTR:", num_utr3, "\n")
+```
+
+# Znalezienie wariantów z regionów międzygenowych
+
+```{r}
+intergenic_variants <- locateVariants(query = rowRanges(vcf_data), subject = txdb, region = IntergenicVariants())
+
+num_intergenic <- nrow(intergenic_variants)
+
+cat("Liczba wariantów międzygenowych:", num_intergenic, "\n")
+```
+
+## 3028 wariantów
+
